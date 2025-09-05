@@ -39,6 +39,7 @@ def stream_users_in_batches(batch_size):
 
     except Error as e:
         print(f"Database error: {e}")
+        return
         # The generator will stop here
     finally:
         if 'cursor' in locals() and cursor:
