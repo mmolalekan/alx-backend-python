@@ -49,19 +49,20 @@ class TestGetJson(unittest.TestCase):
         ("http://example.com", {"payload": True}),
         ("http://holberton.io", {"payload": False}),
     ])
-    def test_get_json(self, test_url: str, test_payload: Dict[str, Any]) -> None:
-        """Test that get_json returns expected payload from mocked HTTP Calls."""
+    def test_get_json(self, test_url: str, payload: Dict[str, Any]) -> None:
+        """Ensure get_json returns expected payload from mocked HTTP Calls."""
         mock_response: Mock = Mock()
-        mock_response.json.return_value = test_payload
+        mock_response.json.return_value = payload
 
-        with patch("utils.requests.get", return_value=mock_response) as mock_get:
+        with patch("utils.requests.get", return_value=mock_response) \
+                as mock_get:
             result = get_json(test_url)
 
             # Ensure requests.get was called once with the correct URL
             mock_get.assert_called_once_with(test_url)
 
             # Ensure the result is the expected payload
-            self.assertEqual(result, test_payload)
+            self.assertEqual(result, payload)
 
 
 class TestMemoize(unittest.TestCase):
@@ -85,7 +86,8 @@ class TestMemoize(unittest.TestCase):
                 """A memoized property depending on a_method."""
                 return self.a_method()
 
-        with patch.object(TestClass, "a_method", return_value=42) as mock_method:
+        with patch.object(TestClass, "a_method", return_value=42) \
+                as mock_method:
             obj = TestClass()
 
             # Call the memoized property twice
