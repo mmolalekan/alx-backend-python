@@ -98,7 +98,7 @@ def inbox(request):
     Display all unread messages for the logged-in user.
     Uses custom manager 'unread' with optimized .only() query.
     """
-    unread_messages = Message.unread.for_user(request.user)
+    unread_messages = Message.unread.unread_for_user(request.user)
 
     messages_data = [
         {
