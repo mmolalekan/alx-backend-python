@@ -1,28 +1,51 @@
+# chats/permissions.py
 from rest_framework import permissions
-from chats.models import Conversation, Message
+from .models import Conversation, Message
+
 
 class IsParticipantOfConversation(permissions.BasePermission):
     """
-    Custom permission to allow only authenticated users and participants in a conversation to access it.
+    Custom permission to only allow participants of a conversation to access messages.
     """
+
     def has_permission(self, request, view):
-        # Allow all authenticated users to access the view
-        return request.user and request.user.is_authenticated
+        # Allow only authenticated users
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # For creating messages (POST requests)
+        if request.method == 'POST':
+            conversation_id = request.data.get('conversation')
+            if conversation_id:
+                try:
+                    conversation = Conversation.objects.get(
+                        conversation_id=conversation_id)
+                    return conversation.participants.filter(user_id=request.user.user_id).exists()
+                except Conversation.DoesNotExist:
+                    return False
+            return False
+
+        return True
 
     def has_object_permission(self, request, view, obj):
-        # A user can view a conversation if they are a participant.
-        if isinstance(obj, Conversation):
-            return obj.participants_id.filter(id=request.user.id).exists()
-            
-        # A user can view or modify a message only if they are the sender.
+        # Allow only authenticated users
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        # Check if user is participant
         if isinstance(obj, Message):
-            # A user can view (GET) a message if they are a participant.
-            if request.method == 'GET':
-                return obj.conversation.participants_id.filter(id=request.user.id).exists()
-            
-            # A user can update (PUT, PATCH) or delete (DELETE) a message
-            # ONLY if they are the sender.
-            if request.method in ['PUT', 'PATCH', 'DELETE']:
-                return obj.sender_id == request.user
-        
-        return False
+            is_participant = obj.conversation.participants.filter(
+                user_id=request.user.user_id).exists()
+        elif isinstance(obj, Conversation):
+            is_participant = obj.participants.filter(
+                user_id=request.user.user_id).exists()
+        else:
+            return False
+
+        # Handle different HTTP methods
+        if request.method in ['PUT', 'PATCH', 'DELETE']:
+            if isinstance(obj, Message):
+                return is_participant and obj.sender == request.user
+            return is_participant
+
+        return is_participant
